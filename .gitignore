@@ -1,0 +1,34 @@
+# 敏感配置（包含真实密钥，禁止提交）
+.env
+api/config.yaml
+
+# Python
+__pycache__/
+*.py[oc]
+*.egg-info/
+dist/
+.venv/
+
+# Node / 前端
+node_modules/
+.next/
+vue-ui/dist/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# 测试缓存
+.pytest_cache/
+
+# Claude
+.claude/settings.local.json
+
+# Docker
+docker-compose.override.yml

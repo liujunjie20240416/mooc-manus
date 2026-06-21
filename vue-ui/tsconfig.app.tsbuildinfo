@@ -1,0 +1,1 @@
+{"root":["./src/env.d.ts","./src/main.ts","./src/types.ts","./src/lib/api.ts","./src/lib/session.ts","./src/app.vue","./src/components/composer.vue","./src/components/previewpanel.vue","./src/components/settingspanel.vue","./src/components/sidebar.vue","./src/components/timeline.vue","./src/components/vncpanel.vue"],"version":"5.9.3"}
