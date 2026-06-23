@@ -42,6 +42,24 @@ export function eventsToTimeline(events) {
 
     const emittedToolCalls = new Set();
 
+    // Collect the latest plan data (merge step statuses from all plan updates)
+    let lastPlanIndex = -1;
+    let latestPlanSteps = [];
+    let latestPlanStatus = '';
+    for (let i = events.length - 1; i >= 0; i--) {
+        if (events[i].type === 'plan') {
+            lastPlanIndex = i;
+            const data = events[i].data;
+            const planObj = data.plan || {};
+            const steps = planObj.steps || data.steps || [];
+            if (steps.length > 0)
+                latestPlanSteps = steps;
+            if (!latestPlanStatus)
+                latestPlanStatus = data.status || 'created';
+            break;
+        }
+    }
+
     return events.flatMap((event, index) => {
         if (event.type === 'message') {
             const message = event.data;
@@ -80,11 +98,14 @@ export function eventsToTimeline(events) {
             };
         }
         if (event.type === 'plan') {
-            const steps = (event.data.steps || []);
+            // Only emit the latest plan event (earlier ones are superseded)
+            if (index !== lastPlanIndex)
+                return [];
             return {
                 kind: 'plan',
-                id: `plan-${index}`,
-                plan: steps,
+                id: 'plan-main',
+                plan: latestPlanSteps,
+                planStatus: latestPlanStatus,
             };
         }
         if (event.type === 'wait') {
@@ -118,7 +139,7 @@ export function eventsToTimeline(events) {
 export function formatRelativeTime(value) {
     if (!value)
         return '';
-    const normalizedValue = typeof value === 'string' && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$/.test(value)
+    const normalizedValue = typeof value === 'string' && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?$/.test(value)
         ? `${value}Z`
         : value;
     const target = new Date(normalizedValue).getTime();

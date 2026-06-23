@@ -38,7 +38,7 @@ function submit() {
       class="composer__input"
       placeholder="输入你的任务，例如：总结页面信息，然后在沙箱里执行 pwd。"
       :disabled="disabled"
-      @keydown.enter.exact.prevent="submit"
+      @keydown.enter.exact.prevent="(e) => { if (!e.isComposing) submit() }"
     />
     <div v-if="pendingFiles.length" class="composer__files">
       <span v-for="file in pendingFiles" :key="file.name" class="file-pill">

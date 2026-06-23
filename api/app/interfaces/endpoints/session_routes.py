@@ -325,8 +325,20 @@ async def vnc_websocket(
     await websocket.accept(subprotocol=selected_protocol)
 
     try:
-        # 4.获取对应会话的vnc链接
-        sandbox_vnc_url = await session_service.get_vnc_url(session_id)
+        # 4.获取对应会话的vnc链接（等待沙箱就绪，最长等5分钟）
+        sandbox_vnc_url = None
+        max_wait = 300  # 最长等待5分钟
+        poll_interval = 3  # 每3秒检查一次
+        elapsed = 0
+        while sandbox_vnc_url is None:
+            try:
+                sandbox_vnc_url = await session_service.get_vnc_url(session_id)
+            except NotFoundError:
+                if elapsed >= max_wait:
+                    raise
+                logger.info(f"会话[{session_id}]沙箱尚未就绪，等待中...（已等{elapsed}s）")
+                await asyncio.sleep(poll_interval)
+                elapsed += poll_interval
         logger.info(f"连接WebSocket VNC： {sandbox_vnc_url}")
 
         # 5.创建上下文并连接到vnc

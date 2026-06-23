@@ -53,6 +53,23 @@ export function eventsToTimeline(events: SSEEventData[]): TimelineItem[] {
 
   const emittedToolCalls = new Set<string>()
 
+  // Collect the latest plan data (merge step statuses from all plan updates)
+  let lastPlanIndex = -1
+  let latestPlanSteps: PlanStep[] = []
+  let latestPlanStatus = ''
+  for (let i = events.length - 1; i >= 0; i--) {
+    if (events[i].type === 'plan') {
+      lastPlanIndex = i
+      const planEvent = events[i]
+      const data = planEvent.data as Record<string, unknown>
+      const planObj = data.plan as Record<string, unknown> | undefined
+      const steps = (planObj?.steps || data.steps || []) as PlanStep[]
+      if (steps.length > 0) latestPlanSteps = steps
+      if (!latestPlanStatus) latestPlanStatus = (data.status as string) || 'created'
+      break
+    }
+  }
+
   return events.flatMap((event, index) => {
     if (event.type === 'message') {
       const message = event.data as ChatMessageEvent
@@ -92,11 +109,13 @@ export function eventsToTimeline(events: SSEEventData[]): TimelineItem[] {
     }
 
     if (event.type === 'plan') {
-      const steps = ((event.data as { steps?: PlanStep[] }).steps || []) as PlanStep[]
+      // Only emit the latest plan event (earlier ones are superseded)
+      if (index !== lastPlanIndex) return []
       return {
         kind: 'plan',
-        id: `plan-${index}`,
-        plan: steps,
+        id: `plan-main`,
+        plan: latestPlanSteps,
+        planStatus: latestPlanStatus,
       }
     }
 
@@ -136,7 +155,7 @@ export function eventsToTimeline(events: SSEEventData[]): TimelineItem[] {
 export function formatRelativeTime(value?: string): string {
   if (!value) return ''
   const normalizedValue =
-    typeof value === 'string' && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$/.test(value)
+    typeof value === 'string' && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?$/.test(value)
       ? `${value}Z`
       : value
   const target = new Date(normalizedValue).getTime()

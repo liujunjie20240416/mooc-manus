@@ -172,6 +172,7 @@ export type TimelineItem =
       kind: 'plan'
       id: string
       plan: PlanStep[]
+      planStatus?: string
     }
   | {
       kind: 'wait'

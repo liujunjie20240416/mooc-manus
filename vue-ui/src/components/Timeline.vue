@@ -41,7 +41,10 @@ const emit = defineEmits<{
       </article>
 
       <article v-else-if="item.kind === 'plan'" class="event-card">
-        <div class="event-card__title">计划</div>
+        <div class="event-card__title">
+          计划 · {{ item.plan.length }} 步
+          <span v-if="item.planStatus" class="status-chip" :data-status="item.planStatus">{{ item.planStatus }}</span>
+        </div>
         <ol class="plan-list">
           <li v-for="step in item.plan" :key="step.id">
             <span>{{ step.description }}</span>

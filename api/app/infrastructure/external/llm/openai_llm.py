@@ -55,34 +55,27 @@ class OpenAILLM(LLM):
     ) -> Dict[str, Any]:
         """使用异步OpenAI客户端发起块响应（该步骤可以切换成流式响应）"""
         try:
-            # 1.检测是否传递了工具列表
+            # 1.构建请求参数（只传有值的可选参数，避免模型不支持导致 400）
+            params: Dict[str, Any] = {
+                "model": self._model_name,
+                "max_tokens": self._max_tokens,
+                "messages": messages,
+                "timeout": self._timeout,
+            }
+            if self._temperature is not None:
+                params["temperature"] = self._temperature
+            if response_format is not None:
+                params["response_format"] = response_format
             if tools:
-                logger.info(f"调用OpenAI客户端向LLM发起请求并携带工具信息: {self._model_name}")
-                response = await self._client.chat.completions.create(
-                    model=self._model_name,
-                    temperature=self._temperature,
-                    max_tokens=self._max_tokens,
-                    messages=messages,
-                    response_format=response_format,
-                    tools=tools, 
-                    tool_choice=tool_choice,
-                    parallel_tool_calls=False,  # 关闭并行工具调用(deepseek没有这个参数的)
-                    timeout=self._timeout,
-                )
-            else:
-                # 2.为传递工具则删除tools/tool_choice等参数
-                logger.info(f"调用OpenAI客户端向LLM发起请求未携带: {self._model_name}")
-                response = await self._client.chat.completions.create(
-                    model=self._model_name,
-                    temperature=self._temperature,
-                    max_tokens=self._max_tokens,
-                    messages=messages,
-                    response_format=response_format,
-                    timeout=self._timeout,
-                )
+                params["tools"] = tools
+                if tool_choice is not None:
+                    params["tool_choice"] = tool_choice
 
-            # 3.处理响应数据并返回
-            logger.info(f"OpenAI客户端返回内容: {response.model_dump()}")
+            logger.info(f"调用OpenAI客户端向LLM发起请求: {self._model_name}, tools={bool(tools)}")
+            response = await self._client.chat.completions.create(**params)
+
+            # 2.处理响应数据并返回
+            logger.debug(f"OpenAI客户端返回内容: {response.model_dump()}")
             return response.choices[0].message.model_dump()
         except Exception as e:
             logger.error(f"调用OpenAI客户端发生错误: {str(e)}")

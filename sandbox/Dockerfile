@@ -10,12 +10,18 @@ RUN sed -i 's|http://archive.ubuntu.com/ubuntu/|http://mirrors.aliyun.com/ubuntu
     sed -i 's|http://security.ubuntu.com/ubuntu/|http://mirrors.aliyun.com/ubuntu/|g' /etc/apt/sources.list && \
     sed -i 's|http://ports.ubuntu.com/ubuntu-ports/|http://mirrors.aliyun.com/ubuntu-ports/|g' /etc/apt/sources.list
 
-# 4.更新和安装基础软件后并移除依赖
+# 4.更新和安装基础软件（使用国内源）
 RUN apt-get update && apt-get install -y \
     sudo bc curl wget gnupg software-properties-common supervisor \
-    xterm socat xvfb x11vnc python3-websockify tigervnc-standalone-server \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
+    xterm socat python3-websockify \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# 5.从官方源安装 TigerVNC（国内源可能缺 arm64 包）
+RUN sed -i 's|http://mirrors.aliyun.com/ubuntu-ports/|http://ports.ubuntu.com/ubuntu-ports/|g' /etc/apt/sources.list && \
+    apt-get update && apt-get install -y tigervnc-standalone-server && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/* && \
+    sed -i 's|http://ports.ubuntu.com/ubuntu-ports/|http://mirrors.aliyun.com/ubuntu-ports/|g' /etc/apt/sources.list
 
 # 5.创建用户ubuntu并赋予sudo权限
 RUN useradd -m -d /home/ubuntu -s /bin/bash ubuntu && \
